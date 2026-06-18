@@ -10,6 +10,7 @@ CANDIDATES = 20
 VISUAL_KEYWORDS = ("diagram", "figure", "table", "layout", "structure",
                    "design", "setup", "illustration", "schematic", "drawing",
                    "clearance", "dimension")
+VISUAL_INTENT = ("show me", "look like", "looks like", "what does", "display")
 FIGURE_THRESHOLD = 0.45
 PAGE_BOOST = 0.15
 RELEVANCE_THRESHOLD = -2.0  # cross-encoder score below this = off-topic query
@@ -104,7 +105,7 @@ def retrieve(query, approach="vector_search", top_k=5):
 
 def is_visual_query(query):
     q = query.lower()
-    return any(w in q for w in VISUAL_KEYWORDS)
+    return any(w in q for w in VISUAL_KEYWORDS) or any(p in q for p in VISUAL_INTENT)
 
 
 def find_figures(query, text_results, max_images=2):
