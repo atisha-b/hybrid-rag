@@ -7,20 +7,22 @@ from datetime import datetime, timezone
 import config
 import llm
 import retrieval
+from groq import RateLimitError
 
 _CONVERSATIONAL_RE = re.compile(
     r"^\s*("
     # greetings
-    r"hi+|hello+|hey+|howdy|sup|yo|greetings|"
+    r"hi+(\s+there)?|hello+|hey+(\s+there)?|howdy|sup|yo|greetings|"
     r"good\s+(morning|afternoon|evening|day)|what[\'\s]*s\s+up|"
     # what/who is PGE/this
     r"what\s+is\s+(pg&?e|pacific\s+gas|this(\s+app)?(\s+about)?)|"
     r"who\s+is\s+(pg&?e|pacific\s+gas)|"
     r"tell\s+me\s+about\s+(pg&?e|pacific\s+gas|yourself|this)|"
     # capability questions
-    r"what\s+(can\s+you\s+(do|help(\s+with)?)|are\s+you|is\s+this(\s+about)?|do\s+you\s+(do|know|cover))|"
+    r"what\s+(can\s+you\s+(do|help(\s+me)?(\s+with)?)|are\s+you|is\s+this(\s+about)?|do\s+you\s+(do|know|cover))|"
     r"who\s+are\s+you|"
-    r"what\s+topics?(\s+(do\s+you\s+cover|can\s+you\s+help(\s+with)?))?|"
+    r"what\s+topics?(\s+(do\s+you\s+cover|can\s+you\s+help(\s+(me\s+)?with)?))?|"
+    r"how\s+can\s+(i\s+use\s+(you|this)|you\s+help(\s+me)?)|"
     # filler
     r"help(\s+me)?|thanks?(\s+you)?|ok(ay)?|cool|great|awesome"
     r")\s*[!?.]*\s*$",
@@ -143,6 +145,12 @@ def answer_query(query, model, ragapproach="vector_search", mode="synthesis",
                 "retrievalmethod": method,
             },
         }
+    except RateLimitError:
+        meta = _empty_metadata(model)
+        meta["totaltimems"] = int((time.perf_counter() - t0) * 1000)
+        return {"status": "error", "query": query,
+                "answer": "The AI model is temporarily rate-limited. Please try again in a few minutes.",
+                "sources": [], "images": [], "metadata": meta}
     except Exception as e:  # keep the contract stable for the frontend
         meta = _empty_metadata(model)
         meta["totaltimems"] = int((time.perf_counter() - t0) * 1000)

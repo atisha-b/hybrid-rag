@@ -1,5 +1,6 @@
 """Groq LLM layer: model validation + prompt building + usage reporting."""
 import config
+from groq import RateLimitError
 
 SYSTEM = (
     "You are a technical assistant for the PG&E Electric Rule Book (Greenbook), "
@@ -39,26 +40,23 @@ def validate_model(model):
 
 def generate(query, context, model, mode="synthesis", max_tokens=700):
     """Return {content, input_tokens, output_tokens, total_tokens, model}."""
+    def _call(m):
+        return config.groq_client().chat.completions.create(
+            model=m,
+            messages=[
+                {"role": "system", "content": SYSTEM},
+                {"role": "user", "content": _prompt(query, context, mode)},
+            ],
+            temperature=0.1,
+            max_tokens=max_tokens,
+        )
+
     try:
-        resp = config.groq_client().chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": SYSTEM},
-                {"role": "user", "content": _prompt(query, context, mode)},
-            ],
-            temperature=0.1,
-            max_tokens=max_tokens,
-        )
+        resp = _call(model)
+    except RateLimitError:
+        raise  # quota exhausted — retrying same endpoint won't help
     except Exception:
-        resp = config.groq_client().chat.completions.create(
-            model=config.DEFAULT_MODEL,
-            messages=[
-                {"role": "system", "content": SYSTEM},
-                {"role": "user", "content": _prompt(query, context, mode)},
-            ],
-            temperature=0.1,
-            max_tokens=max_tokens,
-        )
+        resp = _call(config.DEFAULT_MODEL)
         model = config.DEFAULT_MODEL
     usage = resp.usage
     return {
