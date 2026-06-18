@@ -108,8 +108,11 @@ def answer_query(query, model, ragapproach="vector_search", mode="synthesis",
 
         answer_text = gen["content"]
 
+        # LLM found nothing useful in the context — suppress citations and images
+        llm_found_nothing = "not in the Greenbook" in answer_text
+
         images = []
-        if retrieval.is_visual_query(query):
+        if not llm_found_nothing and retrieval.is_visual_query(query):
             for fig in retrieval.find_figures(query, results, max_images=max_images):
                 b64 = fig.get("image_b64") or _encode_image(fig.get("image_path", ""))
                 if b64:
@@ -117,14 +120,15 @@ def answer_query(query, model, ragapproach="vector_search", mode="synthesis",
 
         seen_pages: set = set()
         sources = []
-        for r in results:
-            p = r["page"]
-            if p not in seen_pages:
-                seen_pages.add(p)
-                sources.append({"title": r.get("title", ""), "url": _source_url(p),
-                                "pageno": str(p + 1)})
-            if len(sources) >= 3:
-                break
+        if not llm_found_nothing:
+            for r in results:
+                p = r["page"]
+                if p not in seen_pages:
+                    seen_pages.add(p)
+                    sources.append({"title": r.get("title", ""), "url": _source_url(p),
+                                    "pageno": str(p + 1)})
+                if len(sources) >= 3:
+                    break
 
         total_ms = int((time.perf_counter() - t0) * 1000)
         return {
