@@ -61,10 +61,11 @@ def answer_query(query, model, ragapproach="vector_search", mode="synthesis",
         generation_ms = int((time.perf_counter() - t_g) * 1000)
 
         images = []
-        for fig in retrieval.find_figures(query, results, max_images=max_images):
-            b64 = fig.get("image_b64") or _encode_image(fig.get("image_path", ""))
-            if b64:
-                images.append({"image_base64": b64})
+        if gen["content"].strip().lower() != "not explicitly defined.":
+            for fig in retrieval.find_figures(query, results, max_images=max_images):
+                b64 = fig.get("image_b64") or _encode_image(fig.get("image_path", ""))
+                if b64:
+                    images.append({"image_base64": b64})
 
         sources = [{"title": r.get("title", ""), "url": _source_url(r["page"]),
                     "pageno": str(r["page"] + 1)} for r in results]

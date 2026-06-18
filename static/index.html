@@ -81,7 +81,6 @@
       border-radius: 50%;
       flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1rem;
     }
     .msg.user .avatar { background: #1a5276; color: #fff; }
     .msg.bot  .avatar { background: #eaf0fb; color: #1a5276; }
@@ -302,7 +301,7 @@
 
     const av = document.createElement('div');
     av.className = 'avatar';
-    av.textContent = role === 'user' ? '👤' : '📖';
+    av.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v1h20v-1c0-3.3-6.7-5-10-5z"/></svg>';
 
     const bub = document.createElement('div');
     bub.className = 'bubble';
@@ -352,7 +351,7 @@
   function addTyping() {
     const wrap = document.createElement('div');
     wrap.className = 'msg bot typing';
-    wrap.innerHTML = `<div class="avatar">📖</div><div class="bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+    wrap.innerHTML = `<div class="avatar"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v1h20v-1c0-3.3-6.7-5-10-5z"/></svg></div><div class="bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
     chat.appendChild(wrap);
     chat.scrollTop = chat.scrollHeight;
     return wrap;
