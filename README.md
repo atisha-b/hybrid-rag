@@ -1,3 +1,12 @@
+---
+title: Greenbook Hybrid RAG
+emoji: 📖
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
+
 # Greenbook Hybrid RAG (Groq + Qdrant + FastAPI)
 
 Hybrid (dense + sparse) retrieval over the PG&E Greenbook PDF, with diagrams
