@@ -9,7 +9,7 @@ CANDIDATES = 20
 VISUAL_KEYWORDS = ("diagram", "figure", "table", "layout", "structure",
                    "design", "setup", "illustration", "schematic", "drawing",
                    "clearance", "dimension")
-FIGURE_THRESHOLD = 0.25
+FIGURE_THRESHOLD = 0.45
 PAGE_BOOST = 0.15
 RELEVANCE_THRESHOLD = -2.0  # cross-encoder score below this = off-topic query
 
@@ -99,7 +99,7 @@ def find_figures(query, text_results, max_images=2):
     top = strong[0][0]
     selected = []
     for s, p in strong:
-        if s >= top * 0.85:
+        if s >= top * 0.95:
             selected.append(p)
         if len(selected) >= max_images:
             break
