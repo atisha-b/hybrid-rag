@@ -1,11 +1,37 @@
 """RAG orchestration -> returns a dict matching the RAGResponse schema."""
 import base64
+import re
 import time
 from datetime import datetime, timezone
 
 import config
 import llm
 import retrieval
+
+_GREETING_RE = re.compile(
+    r"^\s*(hi+|hello+|hey+|howdy|sup|yo|greetings|"
+    r"good\s+(morning|afternoon|evening|day)|"
+    r"what[\'\s]*s\s+up|"
+    r"what\s+(can\s+you\s+(do|help(\s+with)?)|are\s+you|is\s+this(\s+about)?|do\s+you\s+(do|know|cover))|"
+    r"who\s+are\s+you|"
+    r"tell\s+me\s+about\s+(yourself|this)|"
+    r"what\s+topics?(\s+(do\s+you\s+cover|can\s+you\s+help(\s+with)?))?|"
+    r"help(\s+me)?|thanks?(\s+you)?|ok(ay)?|cool|great|awesome"
+    r")\s*[!?.]*\s*$",
+    re.IGNORECASE,
+)
+
+_GREETING_RESPONSE = (
+    "Hi! I'm the PG&E Electric Rule Book (Greenbook) assistant.\n\n"
+    "I can help you with:\n"
+    "- Electrical clearance requirements\n"
+    "- Equipment specifications (transformers, conduits, conductors)\n"
+    "- Construction standards and material codes\n"
+    "- Mandrel sizes, bolt patterns, and installation dimensions\n\n"
+    "What would you like to know?"
+)
+
+_NO_SOURCE_RE = re.compile(r"\[no-source\]", re.IGNORECASE)
 
 
 def _now_iso():
@@ -40,6 +66,12 @@ def answer_query(query, model, ragapproach="vector_search", mode="synthesis",
         return {"status": "error", "query": query or "", "answer": "Empty query.",
                 "sources": [], "images": [], "metadata": _empty_metadata(model)}
 
+    if _GREETING_RE.match(query.strip()):
+        meta = _empty_metadata(model)
+        meta["totaltimems"] = int((time.perf_counter() - t0) * 1000)
+        return {"status": "success", "query": query,
+                "answer": _GREETING_RESPONSE, "sources": [], "images": [], "metadata": meta}
+
     try:
         t_r = time.perf_counter()
         results, method = retrieval.retrieve(query, approach=ragapproach, top_k=top_k)
@@ -51,7 +83,7 @@ def answer_query(query, model, ragapproach="vector_search", mode="synthesis",
             meta["totaltimems"] = int((time.perf_counter() - t0) * 1000)
             meta["retrievalmethod"] = method
             return {"status": "success", "query": query,
-                    "answer": "Not explicitly defined.", "sources": [],
+                    "answer": _GREETING_RESPONSE, "sources": [],
                     "images": [], "metadata": meta}
 
         context = "\n\n".join(f"[page {r['page'] + 1}] {r['text']}" for r in results)
@@ -61,8 +93,8 @@ def answer_query(query, model, ragapproach="vector_search", mode="synthesis",
         generation_ms = int((time.perf_counter() - t_g) * 1000)
 
         raw = gen["content"]
-        answered = "[no-source]" not in raw
-        answer_text = raw.replace("[no-source]", "").replace("[NO-SOURCE]", "").strip()
+        answered = not _NO_SOURCE_RE.search(raw)
+        answer_text = _NO_SOURCE_RE.sub("", raw).strip()
 
         images = []
         if answered:

@@ -35,8 +35,7 @@ RERANK_MODEL = "Xenova/ms-marco-MiniLM-L-6-v2"  # -> BAAI/bge-reranker-base for 
 # this set. Verify current names at https://console.groq.com/docs/models.
 ALLOWED_MODELS = {
     "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant",
-    "deepseek-r1-distill-llama-70b",
+    "mixtral-8x7b-32768",
 }
 DEFAULT_MODEL = "llama-3.3-70b-versatile"
 
