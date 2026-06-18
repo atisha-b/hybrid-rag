@@ -8,21 +8,29 @@ import config
 import llm
 import retrieval
 
-_GREETING_RE = re.compile(
-    r"^\s*(hi+|hello+|hey+|howdy|sup|yo|greetings|"
-    r"good\s+(morning|afternoon|evening|day)|"
-    r"what[\'\s]*s\s+up|"
+_CONVERSATIONAL_RE = re.compile(
+    r"^\s*("
+    # greetings
+    r"hi+|hello+|hey+|howdy|sup|yo|greetings|"
+    r"good\s+(morning|afternoon|evening|day)|what[\'\s]*s\s+up|"
+    # what/who is PGE/this
+    r"what\s+is\s+(pg&?e|pacific\s+gas|this(\s+app)?(\s+about)?)|"
+    r"who\s+is\s+(pg&?e|pacific\s+gas)|"
+    r"tell\s+me\s+about\s+(pg&?e|pacific\s+gas|yourself|this)|"
+    # capability questions
     r"what\s+(can\s+you\s+(do|help(\s+with)?)|are\s+you|is\s+this(\s+about)?|do\s+you\s+(do|know|cover))|"
     r"who\s+are\s+you|"
-    r"tell\s+me\s+about\s+(yourself|this)|"
     r"what\s+topics?(\s+(do\s+you\s+cover|can\s+you\s+help(\s+with)?))?|"
+    # filler
     r"help(\s+me)?|thanks?(\s+you)?|ok(ay)?|cool|great|awesome"
     r")\s*[!?.]*\s*$",
     re.IGNORECASE,
 )
 
 _GREETING_RESPONSE = (
-    "Hi! I'm the PG&E Electric Rule Book (Greenbook) assistant.\n\n"
+    "Hi! I'm the PG&E Electric Rule Book (Greenbook) assistant. "
+    "PG&E (Pacific Gas and Electric Company) is California's largest utility, "
+    "and the Greenbook is their technical manual for electrical construction standards.\n\n"
     "I can help you with:\n"
     "- Electrical clearance requirements\n"
     "- Equipment specifications (transformers, conduits, conductors)\n"
@@ -70,7 +78,7 @@ def answer_query(query, model, ragapproach="vector_search", mode="synthesis",
         return {"status": "error", "query": query or "", "answer": "Empty query.",
                 "sources": [], "images": [], "metadata": _empty_metadata(model)}
 
-    if _GREETING_RE.match(query.strip()):
+    if _CONVERSATIONAL_RE.match(query.strip()):
         meta = _empty_metadata(model)
         meta["totaltimems"] = int((time.perf_counter() - t0) * 1000)
         return {"status": "success", "query": query,
