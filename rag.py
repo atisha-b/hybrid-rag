@@ -60,21 +60,25 @@ def answer_query(query, model, ragapproach="vector_search", mode="synthesis",
         gen = llm.generate(query, context, model, mode=mode)
         generation_ms = int((time.perf_counter() - t_g) * 1000)
 
+        raw = gen["content"]
+        answered = "[no-source]" not in raw
+        answer_text = raw.replace("[no-source]", "").replace("[NO-SOURCE]", "").strip()
+
         images = []
-        if gen["content"].strip().lower() != "not explicitly defined.":
+        if answered:
             for fig in retrieval.find_figures(query, results, max_images=max_images):
                 b64 = fig.get("image_b64") or _encode_image(fig.get("image_path", ""))
                 if b64:
                     images.append({"image_base64": b64})
 
         sources = [{"title": r.get("title", ""), "url": _source_url(r["page"]),
-                    "pageno": str(r["page"] + 1)} for r in results]
+                    "pageno": str(r["page"] + 1)} for r in results] if answered else []
 
         total_ms = int((time.perf_counter() - t0) * 1000)
         return {
             "status": "success",
             "query": query,
-            "answer": gen["content"],
+            "answer": answer_text,
             "sources": sources,
             "images": images,
             "metadata": {
