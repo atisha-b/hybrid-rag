@@ -33,10 +33,6 @@ RERANK_MODEL = "Xenova/ms-marco-MiniLM-L-6-v2"  # -> BAAI/bge-reranker-base for 
 # --- Groq models: allowlist of full model strings -------------------------
 # The frontend sends a full model string (per schema). We validate against
 # this set. Verify current names at https://console.groq.com/docs/models.
-ALLOWED_MODELS = {
-    "llama-3.3-70b-versatile",
-    "mixtral-8x7b-32768",
-}
 DEFAULT_MODEL = "llama-3.3-70b-versatile"
 
 

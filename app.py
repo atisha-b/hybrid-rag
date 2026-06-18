@@ -82,7 +82,7 @@ def health():
         "status": "ok",
         "chunks_ready": client.collection_exists(config.CHUNKS_COLLECTION),
         "figures_ready": client.collection_exists(config.FIGURES_COLLECTION),
-        "models": sorted(config.ALLOWED_MODELS),
+        "models": [config.DEFAULT_MODEL],
     }
 
 

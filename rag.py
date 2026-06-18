@@ -31,7 +31,11 @@ _GREETING_RESPONSE = (
     "What would you like to know?"
 )
 
-_NO_SOURCE_RE = re.compile(r"\[no-source\]", re.IGNORECASE)
+_OFF_TOPIC_RESPONSE = (
+    "That topic isn't covered in the PG&E Greenbook. "
+    "I can help with electrical clearances, equipment specifications, "
+    "conduit sizing, conductor ratings, and construction standards."
+)
 
 
 def _now_iso():
@@ -74,16 +78,16 @@ def answer_query(query, model, ragapproach="vector_search", mode="synthesis",
 
     try:
         t_r = time.perf_counter()
-        results, method = retrieval.retrieve(query, approach=ragapproach, top_k=top_k)
+        results, method, top_score = retrieval.retrieve(query, approach=ragapproach, top_k=top_k)
         retrieval_ms = int((time.perf_counter() - t_r) * 1000)
 
-        if not results:
+        if not results or top_score < retrieval.RELEVANCE_THRESHOLD:
             meta = _empty_metadata(model)
             meta["retrievaltimems"] = retrieval_ms
             meta["totaltimems"] = int((time.perf_counter() - t0) * 1000)
             meta["retrievalmethod"] = method
             return {"status": "success", "query": query,
-                    "answer": _GREETING_RESPONSE, "sources": [],
+                    "answer": _OFF_TOPIC_RESPONSE, "sources": [],
                     "images": [], "metadata": meta}
 
         context = "\n\n".join(f"[page {r['page'] + 1}] {r['text']}" for r in results)
@@ -92,19 +96,16 @@ def answer_query(query, model, ragapproach="vector_search", mode="synthesis",
         gen = llm.generate(query, context, model, mode=mode)
         generation_ms = int((time.perf_counter() - t_g) * 1000)
 
-        raw = gen["content"]
-        answered = not _NO_SOURCE_RE.search(raw)
-        answer_text = _NO_SOURCE_RE.sub("", raw).strip()
+        answer_text = gen["content"]
 
         images = []
-        if answered:
-            for fig in retrieval.find_figures(query, results, max_images=max_images):
-                b64 = fig.get("image_b64") or _encode_image(fig.get("image_path", ""))
-                if b64:
-                    images.append({"image_base64": b64})
+        for fig in retrieval.find_figures(query, results, max_images=max_images):
+            b64 = fig.get("image_b64") or _encode_image(fig.get("image_path", ""))
+            if b64:
+                images.append({"image_base64": b64})
 
         sources = [{"title": r.get("title", ""), "url": _source_url(r["page"]),
-                    "pageno": str(r["page"] + 1)} for r in results] if answered else []
+                    "pageno": str(r["page"] + 1)} for r in results]
 
         total_ms = int((time.perf_counter() - t0) * 1000)
         return {

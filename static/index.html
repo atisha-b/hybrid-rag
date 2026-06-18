@@ -249,8 +249,8 @@
   <span>Hybrid RAG · PG&amp;E Manual</span>
   <select id="model-select">
     <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
-    <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
   </select>
+
 </header>
 
 <div id="chat">
@@ -282,6 +282,23 @@
   const sendBtn= document.getElementById('send');
   const form   = document.getElementById('form');
   const welcome= document.getElementById('welcome');
+
+  const MODEL_LABELS = {
+    'llama-3.3-70b-versatile': 'Llama 3.3 70B',
+    'llama-3.1-70b-versatile': 'Llama 3.1 70B',
+    'llama-3.1-8b-instant': 'Llama 3.1 8B',
+    'mixtral-8x7b-32768': 'Mixtral 8x7B',
+    'gemma2-9b-it': 'Gemma 2 9B',
+  };
+  (async () => {
+    try {
+      const { models } = await fetch('/health').then(r => r.json());
+      const sel = document.getElementById('model-select');
+      sel.innerHTML = models.map(m =>
+        `<option value="${m}">${MODEL_LABELS[m] || m}</option>`
+      ).join('');
+    } catch (_) {}
+  })();
 
   // auto-grow textarea
   input.addEventListener('input', () => {

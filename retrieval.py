@@ -11,6 +11,7 @@ VISUAL_KEYWORDS = ("diagram", "figure", "table", "layout", "structure",
                    "clearance", "dimension")
 FIGURE_THRESHOLD = 0.25
 PAGE_BOOST = 0.15
+RELEVANCE_THRESHOLD = -2.0  # cross-encoder score below this = off-topic query
 
 # ragapproach -> human-readable label stored in response metadata
 METHOD_LABELS = {
@@ -22,11 +23,12 @@ METHOD_LABELS = {
 
 def _rerank(query, points, top_k):
     if not points:
-        return []
+        return [], -999.0
     docs = [p.payload["text"] for p in points]
     scores = list(config.reranker().rerank(query, docs))
     order = sorted(range(len(docs)), key=lambda i: scores[i], reverse=True)
-    return [points[i].payload for i in order[:top_k]]
+    top_score = scores[order[0]]
+    return [points[i].payload for i in order[:top_k]], top_score
 
 
 def vector_search(query, top_k=5):
@@ -62,10 +64,12 @@ def hybrid_search(query, top_k=5):
 
 
 def retrieve(query, approach="vector_search", top_k=5):
-    """Route to the requested approach. Returns (results, method_label)."""
+    """Route to the requested approach. Returns (results, method_label, top_score)."""
     if approach in ("hybrid", "hybrid_search"):
-        return hybrid_search(query, top_k), METHOD_LABELS["hybrid"]
-    return vector_search(query, top_k), METHOD_LABELS["vector_search"]
+        results, top_score = hybrid_search(query, top_k)
+        return results, METHOD_LABELS["hybrid"], top_score
+    results, top_score = vector_search(query, top_k)
+    return results, METHOD_LABELS["vector_search"], top_score
 
 
 def is_visual_query(query):
