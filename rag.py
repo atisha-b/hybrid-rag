@@ -108,8 +108,9 @@ def answer_query(query, model, ragapproach="vector_search", mode="synthesis",
 
         answer_text = gen["content"]
 
-        # LLM found nothing useful in the context — suppress citations and images
-        llm_found_nothing = "not in the Greenbook" in answer_text
+        # Only suppress if the answer IS the fallback — not if it mentions Greenbook in passing
+        _stripped = answer_text.strip().lower()
+        llm_found_nothing = _stripped.startswith("that information is not in the greenbook")
 
         images = []
         if not llm_found_nothing and retrieval.is_visual_query(query):
